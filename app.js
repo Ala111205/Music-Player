@@ -139,7 +139,7 @@ export async function storeSong(input, folder = null) {
     name: cleanedName,
     artist: "Local",
     blob,
-    cover: "./assets/cover/Default.jpg",
+    cover: null,
     favorite: false,
     playCount: 0,
     lastPlayed: null,
@@ -222,7 +222,7 @@ async function playSongAtIndex(i) {
     // Update UI
     title.innerText = song.name || "Unknown";
     artist.innerText = song.artist || "Unknown";
-    cover.src = song.cover || "./assets/cover/Default.jpg";
+    cover.src = song.cover && song.cover.trim() !== "" ? song.cover : "./assets/cover/Default.jpg";
 
     // Update DB for main entries ONLY
     if (!song.isVirtual && song.id) {
@@ -272,7 +272,7 @@ async function playSongById(songId) {
         id: snap.songId,
         name: snap.name,
         artist: snap.artist,
-        cover: snap.cover,
+        cover: snap.cover || null,
         url: snap.url,
         blob: snap.blob instanceof Blob ? snap.blob : null,
         isVirtual: true
