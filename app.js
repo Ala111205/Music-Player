@@ -222,7 +222,7 @@ async function playSongAtIndex(i) {
     // Update UI
     title.innerText = song.name || "Unknown";
     artist.innerText = song.artist || "Unknown";
-    cover.src = song.cover && song.cover.trim() !== "" ? song.cover : "./assets/cover/Default.jpg";
+    cover.src = song.cover && song.cover.trim() !== "" ? song.cover : "./assets/cover/default.jpg";
 
     // Update DB for main entries ONLY
     if (!song.isVirtual && song.id) {
@@ -604,7 +604,7 @@ async function playDirectFromRecord(rec){
   setAudioSrc(rec.blob||rec.url);
   title.innerText = rec.name;
   artist.innerText = rec.artist||"Unknown";
-  cover.src = rec.cover||"./assets/cover/Default.jpg";
+  cover.src = rec.cover||"./assets/cover/default.jpg";
   await updateSongInDB(rec.id,{lastPlayed:Date.now(),playCount:(rec.playCount||0)+1});
   await audio.play();
 }
