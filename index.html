@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
+  <title>Music Player</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="player-container">
+      <h1>Hard-Level Music Player</h1>
+
+      <!-- Song Info -->
+      <div class="song-info">
+        <img id="cover" src="assets/cover/default.jpg" />
+        <div>
+          <h2 id="title">Title</h2>
+          <p id="artist">Artist</p>
+        </div>
+      </div>
+
+      <!-- Search -->
+      <input id="search" type="search" placeholder="Search songs..." />
+
+      <!-- Favorites + History + Smart Shuffle -->
+      <div class="top-controls">
+        <button id="show-favorites">❤️ Favorites</button>
+        <button id="show-history">🕓 History</button>
+        <button id="smart-shuffle">Smart Shuffle: Off</button>
+      </div>
+
+      <!-- Audio -->
+      <audio id="audio"></audio>
+
+      <!-- Progress -->
+      <div class="progress-container">
+        <span id="current">0:00</span>
+        <input type="range" id="progress" value="0" />
+        <span id="duration">0:00</span>
+      </div>
+
+      <!-- Controls -->
+      <div class="controls">
+        <button id="prev">⏮</button>
+        <button id="play">▶</button>
+        <button id="next">⏭</button>
+        <button id="repeat">🔁</button>
+        <span id="loop-toggel"></span>
+      </div>
+
+      <!-- Volume & Speed -->
+      <div class="extra">
+        <label>Volume</label>
+        <input type="range" id="volume" min="0" max="1" step="0.01" value="1" />
+
+        <label>Speed</label>
+        <input type="range" id="speed" min="0.5" max="2" step="0.1" value="1" />
+      </div>
+
+      <!-- Upload -->
+      <input type="file" id="upload" multiple accept="audio/*" />
+      <button id="chooseFolder">Upload Folder</button>
+      <input type="file" id="folderUpload" webkitdirectory directory multiple style="display:none" />
+
+      <!-- Playlist -->
+      <ul id="playlist"></ul>
+
+      <!-- Visualizer -->
+      <canvas id="visualizer" width="800" height="30"></canvas>
+
+      <!-- Lyrics -->
+      <div id="lyrics-container">
+        <h3>Lyrics</h3>
+        <div id="lyrics-display">No lyrics loaded</div>
+      </div>
+    </div>
+
+    <!-- FAVORITE List -->
+    <div class="fav-container hidden">
+      <div class="list-header">
+            <h2>Favorite</h2>
+            <button id="close-favorite" class="close">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+      </div>
+
+      <div id="fav-canvas-list"></div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="history-modal" class="history-container hidden">
+        <div class="list-header">
+            <h2>History</h2>
+            <button id="close-history" class="close">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <ul id="history-list"></ul>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
