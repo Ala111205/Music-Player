@@ -3,7 +3,7 @@
       A clean, responsive web-based music player built with vanilla JavaScript.
       It supports playlists, dynamic UI updates, smooth animations, virtual audio entries, and local metadata handling — all optimized for fast performance and easy extension.
 
-      Live Demo 👉 (https://ala111205.github.io/Music-Player/)
+ **Live Demo** 👉 (https://ala111205.github.io/Music-Player/)
 
 **🚀 Features:-**
 
