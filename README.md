@@ -1,51 +1,51 @@
 **🎵 Modern Music Player (Web App)**
 
-   A clean, responsive web-based music player built with vanilla JavaScript.
-   It supports playlists, dynamic UI updates, smooth animations, virtual audio entries, and local metadata handling — all optimized for fast performance and easy extension.
+      A clean, responsive web-based music player built with vanilla JavaScript.
+      It supports playlists, dynamic UI updates, smooth animations, virtual audio entries, and local metadata handling — all optimized for fast performance and easy extension.
 
-   Live Demo 👉 (add your GitHub Pages / Vercel link here)
+      Live Demo 👉 (add your GitHub Pages / Vercel link here)
 
 **🚀 Features:-**
 
 **🎼 Core Player Features**
 
-   Play, pause, next, previous — full audio playback controls
+      Play, pause, next, previous — full audio playback controls
 
-   Dynamic progress bar with time updates
+      Dynamic progress bar with time updates
 
-   Volume control and mute toggle
+      Volume control and mute toggle
 
-   Auto-play next track
+      Auto-play next track
 
-   Play from playlist or directly via song ID
+      Play from playlist or directly via song ID
 
 **📁 Playlist & Metadata**
 
-   Preloaded playlist with id, name, artist, cover image & audio URL
+      Preloaded playlist with id, name, artist, cover image & audio URL
 
-   Smart lookup: plays a song even if it's not in the playlist (virtual entry injection)
+      Smart lookup: plays a song even if it's not in the playlist (virtual entry injection)
 
-   Fast track switching with no lag
+      Fast track switching with no lag
 
 **🖼️ UI / UX**
 
-   Clean, simple, responsive design
+      Clean, simple, responsive design
 
-   Auto-updating active song UI (cover, title, artist)
+      Auto-updating active song UI (cover, title, artist)
 
-   Loading states for slow networks
+      Loading states for slow networks
 
-   Error handling for broken URLs
+      Error handling for broken URLs
 
 **⚙️ Technical Highlights**
 
-   Modular and maintainable JS structure
+      Modular and maintainable JS structure
 
-   File-based organization (songs / utils / UI handlers)
+      File-based organization (songs / utils / UI handlers)
 
-   Image assets optimized for fast loading
+      Image assets optimized for fast loading
 
-   Zero dependencies — 100% vanilla JS
+      Zero dependencies — 100% vanilla JS
 
 **🛠️ Tech Stack:-**
 
