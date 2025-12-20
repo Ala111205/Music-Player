@@ -241,14 +241,14 @@ async function playSongAtIndex(i) {
 async function playSongById(songId) {
   if (!songId) return;
 
-  // 1️⃣ Check main playlist first
+  // Check main playlist first
   let idx = songs.findIndex(s => s.id === songId);
   if (idx !== -1) {
     await playSongAtIndex(idx);
     return;
   }
 
-  // 2️⃣ Favorite playback (virtual entry)
+  // Favorite playback (virtual entry)
   const favs = await getFavorites();
   const snap = favs.find(f => f.songId === songId);
   if (!snap) {
@@ -519,7 +519,7 @@ async function showFavoritesInCanvas() {
     title.textContent = `${f.name} — ${f.artist || "Unknown"}`;
 
     title.onclick = async () => {
-      await playSongById(f.songId); // uses cleaned playSongAtIndex()
+      await playSongById(f.songId);
       favoriteModal.classList.add("hidden");
     };
 
