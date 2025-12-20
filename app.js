@@ -72,6 +72,7 @@ let analyser, audioCtx, sourceNode;
 let lyricLines = [];
 let lyricTimer = null;
 let vizAnimationId = null;
+let currentIndex = -1;
 
 /* ====================== UTILS ====================== */
 const format = t => !t ? "0:00" : Math.floor(t/60)+":"+Math.floor(t%60).toString().padStart(2,"0");
@@ -159,143 +160,133 @@ function isDuplicate(existingSongs, file) {
 }
 
 /* ====================== PLAYBACK ====================== */
-let currentBlobURL = null;
+let currentBlobURL = null; // SINGLE source of truth for blob URL
 
 async function playSongAtIndex(i) {
-  try {
-    if (!songs[i]) return;
+  if (!songs[i]) return;
 
-    index = i;
-    const song = songs[i];
+  const song = songs[i];
+  currentIndex = i;
+  index = i; // always sync indices
 
-    console.log("Attempting to play:", song.name);
+  let sourceBlob = song.blob instanceof Blob ? song.blob : null;
+  let audioURL = null;
 
-    let sourceBlob = (song.blob instanceof Blob) ? song.blob : null;
-
-    // HARD VALIDATION for MAIN LIST entry
-    const validMainBlob =
-      sourceBlob &&
-      sourceBlob.size > 0 &&
-      sourceBlob.type.startsWith("audio/");
-
-    // FALLBACK to FAVORITES snapshot ONLY IF main entry has no valid blob
-    if (!validMainBlob) {
-      try {
-        const favs = await getFavorites();
-        const snap = favs.find(f => f.songId === song.id);
-
-        if (snap && snap.blob instanceof Blob) {
-          if (snap.blob.size > 0 && snap.blob.type.startsWith("audio/")) {
-            sourceBlob = snap.blob;
-          }
-        }
-      } catch (e) {
-        console.warn("Favorites fallback failed:", e);
+  // fallback to favorites if main blob is invalid
+  if (!sourceBlob) {
+    try {
+      const favs = await getFavorites();
+      const snap = favs.find(f => f.songId === song.id);
+      if (snap) {
+        if (snap.blob instanceof Blob) sourceBlob = snap.blob;
+        else if (typeof snap.url === "string") audioURL = snap.url;
       }
+    } catch (e) {
+      console.warn("Favorites fallback failed:", e);
     }
+  }
 
-    // FINAL VALIDATION — if STILL no valid blob → stop
-    if (
-      !sourceBlob ||
-      sourceBlob.size === 0 ||
-      !sourceBlob.type.startsWith("audio/")
-    ) {
-      alert(`${song.name} cannot be played (no valid audio data).`);
-      console.error("Invalid final blob for:", song.name, sourceBlob);
-      return;
-    }
+  if (!sourceBlob && !audioURL) {
+    alert(`${song.name} cannot be played (no valid audio).`);
+    return;
+  }
 
-    // Reset previous URL
-    if (currentBlobURL) {
-      URL.revokeObjectURL(currentBlobURL);
-      currentBlobURL = null;
-    }
+  // revoke previous blob URL
+  if (currentBlobURL) {
+    URL.revokeObjectURL(currentBlobURL);
+    currentBlobURL = null;
+  }
 
-    audio.pause();
-    audio.currentTime = 0;
-
-    // Build URL
+  // set audio source
+  if (sourceBlob) {
     currentBlobURL = URL.createObjectURL(sourceBlob);
     audio.src = currentBlobURL;
-    audio.load();
-
-    // Update UI
-    title.innerText = song.name || "Unknown";
-    artist.innerText = song.artist || "Unknown";
-    cover.src = song.cover && song.cover.trim() !== "" ? song.cover : "assets/cover/default.jpg";
-
-    // Update DB for main entries ONLY
-    if (!song.isVirtual && song.id) {
-      try {
-        await updateSongInDB(song.id, {
-          lastPlayed: Date.now(),
-          playCount: (song.playCount || 0) + 1
-        });
-      } catch (e) {
-        console.warn("DB update failed:", e);
-      }
-    }
-
-    // Play
-    await audio.play();
-    startVisualizer();
-    playBtn.innerText = "⏸";
-
-    if (song.lyrics) parseAndDisplayLyrics(song.lyrics);
-    else clearLyricsDisplay();
-
-  } catch (err) {
-    console.error("Playback failed:", err);
+  } else {
+    audio.src = audioURL;
   }
+
+  // reset playback
+  audio.pause();
+  audio.currentTime = 0;
+
+  // update UI
+  title.innerText = song.name || "Unknown";
+  artist.innerText = song.artist || "Unknown";
+  cover.src = song.cover || "assets/cover/default.jpg";
+
+  // update DB for main entries only
+  if (!song.isVirtual && song.id) {
+    try {
+      await updateSongInDB(song.id, {
+        lastPlayed: Date.now(),
+        playCount: (song.playCount || 0) + 1
+      });
+    } catch (e) {
+      console.warn("DB update failed:", e);
+    }
+  }
+
+  // play
+  await audio.play();
+  playBtn.innerText = "⏸";
+
+  // lyrics
+  if (song.lyrics) parseAndDisplayLyrics(song.lyrics);
+  else clearLyricsDisplay();
+
+  // start visualizer
+  startVisualizer();
 }
 
 async function playSongById(songId) {
   if (!songId) return;
 
-  // Find song in current playlist
+  // 1️⃣ Check main playlist first
   let idx = songs.findIndex(s => s.id === songId);
-  let song = songs[idx];
-
-  // If not found → check favorites for a virtual entry
-  if (!song) {
-    try {
-      const favs = await getFavorites();
-      const snap = favs.find(f => f.songId === songId);
-      if (!snap) {
-        console.error("Song not found anywhere:", songId);
-        alert("This song is not in your playlist or favorites.");
-        return;
-      }
-
-      // Create virtual song entry
-      song = {
-        id: snap.songId,
-        name: snap.name,
-        artist: snap.artist,
-        cover: snap.cover || null,
-        url: snap.url,
-        blob: snap.blob instanceof Blob ? snap.blob : null,
-        isVirtual: true
-      };
-
-      songs.unshift(song);
-      await loadPlaylist(""); // re-render playlist UI
-      idx = 0;
-    } catch (e) {
-      console.error("Failed to load favorite snapshot:", e);
-      return;
-    }
+  if (idx !== -1) {
+    await playSongAtIndex(idx);
+    return;
   }
 
-  // Scroll UI to current song
-  const el = playlistUI.querySelector(`li[data-id="${song.id}"]`);
-  if (el) scrollElementToCenter(playlistUI, el);
+  // 2️⃣ Favorite playback (virtual entry)
+  const favs = await getFavorites();
+  const snap = favs.find(f => f.songId === songId);
+  if (!snap) {
+    alert("Song not found in favorites.");
+    return;
+  }
 
-  // Delegate to playSongAtIndex
-  await playSongAtIndex(idx);
+  const hasValidBlob = snap.blob instanceof Blob && snap.blob.size > 0 && snap.blob.type.startsWith("audio/");
+  const hasValidURL = typeof snap.url === "string" && snap.url.length > 0;
+
+  if (!hasValidBlob && !hasValidURL) {
+    alert("This favorite has no playable audio.");
+    await removeFavorite(songId);
+    return;
+  }
+
+  // check if virtual entry already exists
+  let virtualIdx = songs.findIndex(s => s.id === songId && s.isVirtual);
+  if (virtualIdx === -1) {
+    // inject at start
+    const virtualEntry = {
+      id: snap.songId,
+      name: snap.name,
+      artist: snap.artist || "Unknown",
+      cover: snap.cover || "assets/cover/default.jpg",
+      blob: hasValidBlob ? snap.blob : null,
+      url: !hasValidBlob ? snap.url : null,
+      isVirtual: true
+    };
+    songs.unshift(virtualEntry);
+    virtualIdx = 0;
+  }
+
+  await playSongAtIndex(virtualIdx);
 }
 
 function nextSong() {
+  if (currentIndex === -1) return;
   if (!songs.length) return;
   if (smartShuffle) {
     const choice = pickSmartNext();
@@ -307,6 +298,7 @@ function nextSong() {
 }
 
 function prevSong() {
+  if (currentIndex === -1) return;
   if (!songs.length) return;
   index = (index-1+songs.length)%songs.length;
   playSongAtIndex(index);
@@ -510,7 +502,6 @@ async function showFavoritesInCanvas() {
   const favs = await getFavorites();
   const box = document.getElementById("fav-canvas-list");
   if (!box) return;
-
   box.innerHTML = "";
 
   if (!favs.length) {
@@ -528,27 +519,7 @@ async function showFavoritesInCanvas() {
     title.textContent = `${f.name} — ${f.artist || "Unknown"}`;
 
     title.onclick = async () => {
-      const idx = songs.findIndex(s => s.id === f.songId);
-
-      if (idx !== -1) {
-        playSongById(f.songId);
-      } else {
-        // inject virtual playable entry
-        const virtual = {
-          id: f.songId,
-          name: f.name,
-          artist: f.artist,
-          cover: f.cover,
-          url: f.url,
-          blob: null,
-          isVirtual: true
-        };
-        songs.unshift(virtual);
-
-        await loadPlaylist("");
-        playSongAtIndex(0);
-      }
-
+      await playSongById(f.songId); // uses cleaned playSongAtIndex()
       favoriteModal.classList.add("hidden");
     };
 
@@ -783,7 +754,13 @@ function clearLyricsDisplay(){ lyricLines=[]; lyricsDisplay.innerText=""; if(lyr
 
 /* ====================== AUDIO EVENTS ====================== */
 audio.ontimeupdate=()=>{ if(!isFinite(audio.duration)) return; progress.value=(audio.currentTime/audio.duration)*100||0; current.innerText=format(audio.currentTime); duration.innerText=format(audio.duration); };
-audio.onended=()=>repeat?audio.play():nextSong();
+audio.onended = () => {
+  if (repeat) {
+    audio.play();
+  } else if (currentIndex !== -1) {
+    nextSong();
+  }
+};
 
 /* ====================== START ====================== */
 window.onload=async()=>{ await loadPlaylist(); };

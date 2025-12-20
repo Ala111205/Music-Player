@@ -123,14 +123,28 @@ export async function updateSongInDB(id, updates) {
 export async function addFavorite(song) {
   await openDB();
 
-  if (!song || !song.id) throw new Error("addFavorite requires full song object with stable id");
+  if (!song || !song.id) {
+    throw new Error("addFavorite requires valid song with id");
+  }
+
+  const hasValidBlob =
+    song.blob instanceof Blob &&
+    song.blob.size > 0 &&
+    song.blob.type?.startsWith("audio/");
+
+  const hasValidURL = typeof song.url === "string" && song.url.length > 0;
+
+  if (!hasValidBlob && !hasValidURL) {
+    console.warn("Blocked broken favorite:", song.name);
+    return; // ❌ DO NOT STORE
+  }
 
   const clone = {
     songId: song.id,
     name: song.name,
     artist: song.artist,
-    blob: song.blob || null,
-    url: song.url || null,
+    blob: hasValidBlob ? song.blob : null,
+    url: hasValidURL ? song.url : null,
     cover: song.cover || null,
     lyrics: song.lyrics || null,
     folder: song.folder || null,
@@ -182,3 +196,25 @@ export async function resetSongsDB() {
   db.transaction(SONGS, "readwrite").objectStore(SONGS).clear();
   db.transaction(FAVORITES, "readwrite").objectStore(FAVORITES).clear();
 }
+
+async function cleanupBrokenFavorites() {
+  const favs = await getFavorites();
+
+  for (const f of favs) {
+    const invalid =
+      (!f.blob ||
+        f.blob.size === 0 ||
+        !f.blob.type?.startsWith("audio/")) &&
+      !f.url;
+
+    if (invalid) {
+      console.warn("Removing broken favorite:", f.name);
+      await removeFavorite(f.songId);
+    }
+  }
+
+  console.log("Favorite cleanup completed");
+}
+
+// run ONCE on startup
+cleanupBrokenFavorites();
